@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Iterator
 from dataclasses import dataclass
 from typing import Tuple, List, Optional, Union
-import spacy
+from transformers import AutoTokenizer
 
 from redlines.document import Document
 
@@ -41,8 +41,7 @@ It is used to split the text into paragraphs.
 space_pattern = re.compile(r"(\s+)")
 """It is used to detect space."""
 
-from spacy.lang.en import English
-nlp = English()
+hf_tokenizer = AutoTokenizer.from_pretrained("deepseek-ai/DeepSeek-V3")
 """
 Tokenizer with the default settings for English including punctuation rules and exceptions.
 """
@@ -57,7 +56,8 @@ def tokenize_text(text: str, choice: TokenizerType) -> list[str]:
     if choice == TokenizerType.REGEX:
         return re.findall(tokenizer, text)
     elif choice == TokenizerType.SPACY:
-        return list(_spacy_tokenize(text))
+        token_ids = hf_tokenizer(text)['input_ids']
+        return [hf_tokenizer.decode([token_id]) for token_id in token_ids]
 
     raise ValueError(f"Invalid choice: {choice}")
 
