@@ -1,9 +1,16 @@
+import enum
 import re
 from abc import ABC, abstractmethod
+from collections.abc import Iterator
 from dataclasses import dataclass
 from typing import Tuple, List, Optional, Union
+import spacy
 
 from redlines.document import Document
+
+class TokenizerType(enum.StrEnum):
+    REGEX = enum.auto()
+    SPACY = enum.auto()
 
 tokenizer = re.compile(r"((?:[^()\s]+|[().?!-])\s*)")
 """
@@ -34,9 +41,25 @@ It is used to split the text into paragraphs.
 space_pattern = re.compile(r"(\s+)")
 """It is used to detect space."""
 
+from spacy.lang.en import English
+nlp = English()
+"""
+Tokenizer with the default settings for English including punctuation rules and exceptions.
+"""
 
-def tokenize_text(text: str) -> List[str]:
-    return re.findall(tokenizer, text)
+def _spacy_tokenize(text: str) -> Iterator[str]:
+    for token in nlp(text):
+        yield token.text
+        if token.whitespace_:
+            yield token.whitespace_
+
+def tokenize_text(text: str, choice: TokenizerType) -> list[str]:
+    if choice == TokenizerType.REGEX:
+        return re.findall(tokenizer, text)
+    elif choice == TokenizerType.SPACY:
+        return list(_spacy_tokenize(text))
+
+    raise ValueError(f"Invalid choice: {choice}")
 
 
 def split_paragraphs(text: str) -> List[str]:
@@ -124,6 +147,8 @@ class WholeDocumentProcessor(RedlinesProcessor):
     source: str
     test: str
 
+    tokenizer_type: TokenizerType = TokenizerType.REGEX
+
     def process(
         self, source: Union[Document, str], test: Union[Document, str]
     ) -> List[Redline]:
@@ -136,8 +161,8 @@ class WholeDocumentProcessor(RedlinesProcessor):
         self.source = source.text if isinstance(source, Document) else source
         self.test = test.text if isinstance(test, Document) else test
 
-        seq_source = tokenize_text(concatenate_paragraphs_and_add_chr_182(self.source))
-        seq_test = tokenize_text(concatenate_paragraphs_and_add_chr_182(self.test))
+        seq_source = tokenize_text(concatenate_paragraphs_and_add_chr_182(self.source), self.tokenizer_type)
+        seq_test = tokenize_text(concatenate_paragraphs_and_add_chr_182(self.test), self.tokenizer_type)
 
         from difflib import SequenceMatcher
 

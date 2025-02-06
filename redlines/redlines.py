@@ -8,7 +8,7 @@ from redlines.document import Document
 from redlines.processor import (
     tokenize_text,
     concatenate_paragraphs_and_add_chr_182,
-    WholeDocumentProcessor,
+    WholeDocumentProcessor, TokenizerType,
 )
 
 
@@ -28,7 +28,7 @@ class Redlines:
     @source.setter
     def source(self, value):
         self._source = value
-        self._seq1 = tokenize_text(concatenate_paragraphs_and_add_chr_182(value))
+        self._seq1 = tokenize_text(concatenate_paragraphs_and_add_chr_182(value), self.tokenizer_type)
 
     @property
     def test(self):
@@ -38,7 +38,7 @@ class Redlines:
     @test.setter
     def test(self, value):
         self._test = value
-        self._seq2 = tokenize_text(concatenate_paragraphs_and_add_chr_182(value))
+        self._seq2 = tokenize_text(concatenate_paragraphs_and_add_chr_182(value), self.tokenizer_type)
 
     def __init__(
         self, source: str | Document, test: str | Document | None = None, **options
@@ -80,12 +80,14 @@ class Redlines:
         :param source: The source text to be used as a basis for comparison.
         :param test: Optional test text to compare with the source.
         """
-        self.source = source.text if isinstance(source, Document) else source
         self.options = options
+        self.tokenizer_type = TokenizerType(options.get("tokenizer", "regex"))
+        self.source = source.text if isinstance(source, Document) else source
         if test:
             self.test = test.text if isinstance(test, Document) else test
             # self.compare()
         self.processor = WholeDocumentProcessor()
+        self.processor.tokenizer_type = self.tokenizer_type
 
     @property
     def opcodes(self) -> list[tuple[str, int, int, int, int]]:

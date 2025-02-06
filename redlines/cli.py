@@ -68,6 +68,7 @@ from rich.panel import Panel
 from rich.text import Text
 
 from redlines import Redlines
+from redlines.processor import TokenizerType
 
 # Use Rich markup
 click.rich_click.USE_RICH_MARKUP = True
@@ -101,10 +102,19 @@ def cli():
     pass
 
 
+tokenizer_option = click.option(
+    "--tokenizer",
+    type=click.Choice(TokenizerType),
+    default="regex",
+    help="The tokenizer to use (default: regex)."
+)
+
+
 @cli.command()
 @click.argument("source", required=True)
 @click.argument("test", required=True)
-def text(source, test):
+@tokenizer_option
+def text(source, test, tokenizer):
     """
     Compares the strings SOURCE and TEST and produce a redline in the terminal in a display that shows the original, new and redlined text.
 
@@ -112,7 +122,7 @@ def text(source, test):
     @private
     """
 
-    redlines = Redlines(source, test)
+    redlines = Redlines(source, test, tokenizer=tokenizer)
 
     console = Console()
     layout = Layout()
@@ -134,7 +144,8 @@ def text(source, test):
 @cli.command()
 @click.argument("source", required=True)
 @click.argument("test", required=True)
-def simple_text(source, test):
+@tokenizer_option
+def simple_text(source, test, tokenizer):
     """
     Compares the strings SOURCE and TEST and outputs the redline in the terminal.
 
@@ -143,7 +154,7 @@ def simple_text(source, test):
     """
     from rich import print
 
-    redlines = Redlines(source, test)
+    redlines = Redlines(source, test, tokenizer=tokenizer)
     print(redlines.output_rich)
 
 
@@ -158,7 +169,8 @@ def simple_text(source, test):
     default="red_green",
     help="The markdown style to use.",
 )
-def markdown(source, test, markdown_style):
+@tokenizer_option
+def markdown(source, test, markdown_style, tokenizer):
     """
     Compares the strings SOURCE and TEST and outputs the redline as a markdown.
 
@@ -167,5 +179,5 @@ def markdown(source, test, markdown_style):
     """
     from rich import print
 
-    redlines = Redlines(source, test, markdown_style=markdown_style)
+    redlines = Redlines(source, test, markdown_style=markdown_style, tokenizer=tokenizer)
     print(redlines.output_markdown)
